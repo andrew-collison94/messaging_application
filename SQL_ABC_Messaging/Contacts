@@ -1,0 +1,172 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
+using ABC_Messaging_Application;
+
+namespace ABC_Messaging_Application
+{
+    public class Agent
+    {
+        public int AgentID { get; set; }
+        public string Name { get; set; }
+        public string Lastname { get; set; }
+        public string Telephone { get; set; }
+        public string Email { get; set; }
+        public string Username { get; set; }
+        public string Password { get; set; }
+        public string Role { get; set; }
+        public string Region { get; set; }
+
+        public Agent(int ID, string name, string lastName, string telephone, string email, string username, string password, string role, string region)
+        {
+            AgentID = ID;
+            Name = name;
+            Lastname = lastName;
+            Telephone = telephone;
+            Email = email;
+            Username = username;
+            Password = password;
+            Role = role;
+            Region = region;
+        }
+
+        public Agent()
+        {
+        }
+
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb
+                .AppendLine($"AgentID: {AgentID}")
+                .AppendLine($"Name: {Name}")
+                .AppendLine($"Surname: {Lastname}")
+                .AppendLine($"Telephone: {Telephone}")
+                .AppendLine($"Email: {Email}")
+                .AppendLine($"UserName: {Username}")
+                .AppendLine();
+
+            return sb.ToString();
+        }
+    }
+
+
+    class UserHandle
+    {
+        public static void CreateUser()
+        {
+            try
+            {
+                SQLAccess.SQLConnectionOpen();
+
+                Console.Write("Agent ID: ");
+                int ID = int.Parse(Console.ReadLine());
+
+                Console.Write("Given name: ");
+                string name = Console.ReadLine();
+
+                Console.Write("Family name: ");
+                string lastname = Console.ReadLine();
+
+                Console.Write("Telephone: ");
+                string telephone = Console.ReadLine();
+
+                Console.Write("Email: ");
+                string email = Console.ReadLine();
+
+                Console.Write("Username: ");
+                string username = Console.ReadLine();
+
+                Console.Write("Password: ");
+                string password = Console.ReadLine();
+
+                Console.Write("Role (admin or agent):  ");
+                string role = Console.ReadLine();
+
+                Console.Write("Region (london, liverpool, nottingham): ");
+                string region = Console.ReadLine();
+
+                SQLAccess.AgentToSQL(ID, name, lastname, telephone, email, username, password, role, region);
+            }
+
+            catch (Exception badLength)
+            {
+                Console.WriteLine(badLength.Message);
+            }
+            finally
+            {
+                SQLAccess.SQLConnectionClose();
+                SQLAccess.SQLConnectionDispose();
+            }
+        }
+
+        public static void ViewAllUsers()
+        {
+            try
+            {
+                SQLAccess.SQLConnectionOpen();
+                SQLAccess.ViewAllAgents();
+            }
+            catch (Exception badLength)
+            {
+                Console.WriteLine(badLength.Message);
+            }
+            finally
+            {
+                SQLAccess.SQLConnectionClose();
+                SQLAccess.SQLConnectionDispose();
+            }
+        }
+
+        public static void EditContact()
+        {
+            try
+            {
+                SQLAccess.SQLConnectionOpen();
+
+                Console.Write("ID of contact to update: ");
+                int AgentID = int.Parse(Console.ReadLine());
+                Console.Write("Which field needs to be updated? ");
+                string updateInfo = Console.ReadLine();
+                Console.WriteLine($"Enter a new {updateInfo} for contact");
+                string newUpdateInfo = Console.ReadLine();
+
+                SQLAccess.EditContactInfo(updateInfo, AgentID, newUpdateInfo);
+            }
+            catch (Exception badLength)
+            {
+                Console.WriteLine(badLength.Message);
+            }
+            finally
+            {
+                SQLAccess.SQLConnectionClose();
+                SQLAccess.SQLConnectionDispose();
+            }
+        }
+
+        public static void DeleteAgent()
+        {
+            try
+            {
+                SQLAccess.SQLConnectionOpen();
+
+                Console.Write("ID of contact you wish to delete: ");
+                int IDForDelete = int.Parse(Console.ReadLine());
+
+                SQLAccess.DeleteAgent(IDForDelete);
+            }
+            catch (Exception badLength)
+            {
+                Console.WriteLine(badLength.Message);
+            }
+            finally
+            {
+                SQLAccess.SQLConnectionClose();
+                SQLAccess.SQLConnectionDispose();
+            }
+        }
+
+    }
+}
+

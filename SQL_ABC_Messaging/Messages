@@ -1,0 +1,253 @@
+using System;
+using System.T  t;
+using ABC_Messaging_Application;
+
+namespace ABC_Messaging_Application
+{
+    class Message
+    {
+        public DateTime TimeStamp { get; set; }
+        public string SenderUsername { get; set; }
+        public string ReceiverUsername { get; set; }
+        private string messageContents;
+        public int characterLimit = 4000; //NVARCHAR character limit
+
+        public string MessageContents
+        {
+            get
+            {
+                return messageContents;
+            }
+            set
+            {
+                if (value.Length <= 0 || value.Length > characterLimit)
+                {
+                    throw new ArgumentOutOfRangeException("MessageContents", "Entry is outside allowed character limits");
+                }
+
+                messageContents = value;
+            }
+        }
+
+        public Message()
+        { }
+
+        public Message(DateTime timeStamp, string senderUsername, string receiverUsername)
+        {
+            TimeStamp = timeStamp;
+            SenderUsername = senderUsername;
+            ReceiverUsername = receiverUsername;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder messageDetails = new StringBuilder();
+            messageDetails
+                .Append($"TimeStamp: {TimeStamp}\t")
+                .Append($"Sender: {SenderUsername}\t")
+                .Append($"Receiver: {ReceiverUsername}\t")
+                .Append($"MessageData: {MessageContents}");
+
+
+            return messageDetails.ToString();
+        }
+    }
+
+    class MessageID
+    {
+        public static void CreateMessage(string SenderUsername)
+        {
+            try
+            {
+                SQLAccess.SQLConnectionOpen();
+                Message message = new Message();
+
+                SQLAccess.ChooseRecipient(SenderUsername);
+                Console.WriteLine("Write the UserName of the receiver for your message!");
+                message.ReceiverUsername = Console.ReadLine();
+
+                SQLAccess.ExistentSenderInMessages(SenderUsername, message.ReceiverUsername);
+
+                message.SenderUsername = SenderUsername;
+                message.TimeStamp = DateTime.Now;
+                Console.WriteLine("Write your Message:");
+                message.MessageContents = Console.ReadLine();
+
+
+                SQLAccess.MessageToSQL(message.TimeStamp, message.SenderUsername, message.ReceiverUsername, message.MessageContents);
+
+            }
+            catch (Exception badLength)
+            {
+                Console.WriteLine(badLength.Message);
+            }
+            finally
+            {
+                SQLAccess.SQLConnectionClose();
+                SQLAccess.SQLConnectionDispose();
+            }
+        }
+
+        public static void ViewMessage(string SenderUsername)
+        {
+            try
+            {
+                SQLAccess.SQLConnectionOpen();
+
+                SQLAccess.ViewMessage(SenderUsername);
+
+            }
+            catch (Exception badLength)
+            {
+                Console.WriteLine(badLength.Message);
+            }
+            finally
+            {
+                SQLAccess.SQLConnectionClose();
+                SQLAccess.SQLConnectionDispose();
+            }
+        }
+
+        public static void ViewAllMessages()
+        {
+            try
+            {
+                SQLAccess.SQLConnectionOpen();
+                SQLAccess.ViewAllMessages();
+            }
+            catch (Exception badLength)
+            {
+                Console.WriteLine(badLength.Message);
+            }
+            finally
+            {
+                SQLAccess.SQLConnectionClose();
+                SQLAccess.SQLConnectionDispose();
+            }
+        }
+
+        public static void EditMessage(string SenderUsername)
+        {
+            try
+            {
+                SQLAccess.SQLConnectionOpen();
+
+                Console.Write("Write the username of the receiver that you want to Edit: ");
+                string ReceiverUsername = Console.ReadLine();
+
+                Console.Write("Enter the time stamp of the message.");
+                DateTime timeStamp = DateTime.Parse(Console.ReadLine());
+
+                Console.WriteLine("Write what the new message should read: ");
+                string newMessage = Console.ReadLine();
+
+                SQLAccess.ExistentRecipientInMessages(SenderUsername, ReceiverUsername, timeStamp);
+
+                SQLAccess.UpdateMessage(SenderUsername, ReceiverUsername, timeStamp, newMessage);
+            }
+            catch (Exception badLength)
+            {
+                Console.WriteLine(badLength.Message);
+            }
+            finally
+            {
+                SQLAccess.SQLConnectionClose();
+                SQLAccess.SQLConnectionDispose();
+            }
+        }
+
+        public static void EditAllMessages()
+        {
+            try
+            {
+                SQLAccess.SQLConnectionOpen();
+
+
+                Console.WriteLine("Write the username of the sender that you want to Edit: ");
+                string SenderUsername = Console.ReadLine();
+
+                Console.WriteLine("Write the username of the receiver that you want to Edit: ");
+                string ReceiverUsername = Console.ReadLine();
+
+
+                Console.WriteLine("Enter the Date and time of the message.");
+                var timeStamp = DateTime.Parse(Console.ReadLine());
+
+
+
+                Console.WriteLine("Write the new Message: ");
+                string newMessage = Console.ReadLine();
+
+                SQLAccess.ExistentRecipientInMessages(SenderUsername, ReceiverUsername, timeStamp);
+
+
+
+                SQLAccess.UpdateMessage(SenderUsername, ReceiverUsername, timeStamp, newMessage);
+            }
+            catch (Exception badLength)
+            {
+                Console.WriteLine(badLength.Message);
+            }
+            finally
+            {
+                SQLAccess.SQLConnectionClose();
+                SQLAccess.SQLConnectionDispose();
+            }
+        }
+
+        public static void DeleteMessage(string username)
+        {
+            try
+            {
+                SQLAccess.SQLConnectionOpen();
+
+                Console.WriteLine("Write the username of the receiver that you want to Delete: ");
+                string ReceiverUsername = Console.ReadLine();
+
+                Console.WriteLine("Enter the Date and time of the message.");
+                DateTime timeStamp = DateTime.Parse(Console.ReadLine());
+
+                SQLAccess.DeleteMessage(username, ReceiverUsername, timeStamp);
+            }
+            catch (Exception badLength)
+            {
+                Console.WriteLine(badLength.Message);
+            }
+            finally
+            {
+                SQLAccess.SQLConnectionClose();
+                SQLAccess.SQLConnectionDispose();
+            }
+        }
+
+        public static void DeleteAllMessages()
+        {
+            try
+            {
+                SQLAccess.SQLConnectionOpen();
+
+                Console.WriteLine("Enter the username of the sender that you want to Delete: ");
+                string SenderUsername = Console.ReadLine();
+
+                Console.WriteLine("Write the username of the receiver that you want to Delete: ");
+                string ReceiverUsername = Console.ReadLine();
+
+                Console.WriteLine("Enter the Date and time of the message.");
+                var timeStamp = DateTime.Parse(Console.ReadLine());
+
+                SQLAccess.DeleteMessage(SenderUsername, ReceiverUsername, timeStamp);
+            }
+            catch (Exception badLength)
+            {
+                Console.WriteLine(badLength.Message);
+            }
+            finally
+            {
+                SQLAccess.SQLConnectionClose();
+                SQLAccess.SQLConnectionDispose();
+            }
+        }
+    }
+}
+
+

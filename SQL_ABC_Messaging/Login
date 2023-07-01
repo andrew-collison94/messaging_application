@@ -1,0 +1,30 @@
+using System;
+namespace ABC_Messaging_Application
+{
+    public class Login
+    {
+        public static Agent LoginAttempt()
+        {
+            Agent agent = new Agent();
+            try
+            {
+                SQLAccess.SQLConnectionOpen();
+
+                Console.WriteLine("Enter username and password to Login:");
+                string usernameInserted = Console.ReadLine();
+                string passwordInserted = Console.ReadLine();
+                agent = SQLAccess.LoginToSQL(usernameInserted, passwordInserted);
+            }
+            catch (Exception badLength)
+            {
+                Console.WriteLine(badLength.Message);
+            }
+            finally
+            {
+                SQLAccess.SQLConnectionClose();
+                SQLAccess.SQLConnectionDispose();
+            }
+            return agent;
+        }
+    }
+}

@@ -1,0 +1,267 @@
+using System;
+using System.Data.SqlClient;
+using System.Text;
+
+namespace ABC_Messaging_Application
+{
+    class SQLAccess
+    {
+        private static string connectionString = 
+        "Data Source=localhost,1401;" +
+        "Initial Catalog=master;" +
+        "User id=sa;" +
+        "Password=Mormoloc5;";
+        private static SqlConnection sqlConnection;
+
+        public static void SQLConnectionOpen()
+        {
+            sqlConnection = new SqlConnection(connectionString);
+            sqlConnection.Open();
+        }
+
+        public static void SQLConnectionClose()
+        {
+            sqlConnection.Close();
+        }
+
+        public static void SQLConnectionDispose()
+        {
+            sqlConnection.Dispose();
+        }
+
+        public static void AgentToSQL(int ID, string name, string lastName, string telephone, string email, string Username, string password, string role, string group)
+        {
+            SqlCommand cmdInsertDetails = new SqlCommand($"INSERT INTO agents(Username, Password) VALUES('{username}', '{password}')", sqlConnection);
+            int rowsOfDetails = cmdInsertDetails.ExecuteNonQuery();
+            if (rowsOfDetails > 0)
+            {
+                Console.WriteLine("Username and Password added successfully");
+            }
+
+            SqlCommand cmdInsert = new SqlCommand($"INSERT INTO agent(Name, Lastname, Telephone, Email, Role, Username) VALUES('{name}', '{lastName}', '{telephone}', '{email}', '{role}', '{username}')", sqlConnection);
+            int rowsInserted = cmdInsert.ExecuteNonQuery();
+            if (rowsInserted > 0)
+            {
+                Console.WriteLine("Agent added successfully");
+            }
+        }
+
+        public static void MessageToSQL(DateTime TimeStamp, string SenderUsername, string ReceiverUsername, string MessageContents)
+        {
+            SqlCommand cmdInsert = new SqlCommand($"INSERT INTO messages(TimeStamp, Sender, Receiver, MessageContents) VALUES('{TimeStamp}', '{SenderUsername}', '{ReceiverUsername}', '{MessageContents}')", sqlConnection);
+            int rowsInserted = cmdInsert.ExecuteNonQuery();
+            if (rowsInserted > 0)
+            {
+                Console.WriteLine("Insertion Successful");
+                Console.WriteLine($"{rowsInserted} rows inserted Successfully");
+            }
+        }
+
+        public static void EditContactInfo(string updateInfo, int AgentID, string newUpdateInfo)
+        {
+            SqlCommand cmdUpdate = new SqlCommand($"UPDATE agents SET {updateInfo} = '{newUpdateInfo}' WHERE ID = '{AgentID}'", sqlConnection);
+            int rowsUpdated = cmdUpdate.ExecuteNonQuery();
+            if (rowsUpdated > 0)
+            {
+                Console.WriteLine("Update Successfull");
+                Console.WriteLine($"{rowsUpdated} rows updated successfully");
+            }
+        }
+
+        public static void UpdateMessage(string SenderUsername, string ReceiverUsername, DateTime TimeStamp, string newMessageContents)
+        {
+            SqlCommand cmdUpdate = new SqlCommand($"UPDATE messages SET MessageContents = '{newMessageContents}' WHERE TimeStamp = '{TimeStamp}' AND Sender = '{SenderUsername}' AND Receiver = '{ReceiverUsername}'", sqlConnection);
+
+            int rowsUpdated = cmdUpdate.ExecuteNonQuery();
+            if (rowsUpdated > 0)
+            {
+                Console.WriteLine("Update Successfull");
+                Console.WriteLine($"{rowsUpdated} rows updated successfully");
+            }
+        }
+
+        public static void DeleteAgent(int IDForDelete)
+        {
+            SqlCommand cmdDelete = new SqlCommand($"DELETE FROM agents WHERE AgentID = '{IDForDelete}'", sqlConnection);
+            int rowsDeleted = cmdDelete.ExecuteNonQuery();
+            if (rowsDeleted > 0)
+            {
+                Console.WriteLine("Delete Successfull");
+                Console.WriteLine($"{rowsDeleted} rows deleted successfully");
+            }
+        }
+
+        public static void DeleteMessage(string Username, string ReceiverUsername, DateTime TimeStamp)
+        {
+            SqlCommand cmdDelete = new SqlCommand($"DELETE FROM messages WHERE Sender = '{Username}' AND Receiver = '{ReceiverUsername}' AND TimeStamp = '{TimeStamp}'", sqlConnection);
+            int rowsDeleted = cmdDelete.ExecuteNonQuery();
+            if (rowsDeleted > 0)
+            {
+                Console.WriteLine("Delete Successfull");
+                Console.WriteLine($"{rowsDeleted} rows deleted successfully");
+            }
+        }
+
+        public static void ChooseRecipient(string SenderUsername) //Displays list of all potential recipients of a message
+        {
+            SqlCommand cmdSelect = new SqlCommand($"SELECT Name, Lastname, Username FROM agents WHERE Username != '{SenderUsername}'", sqlConnection);
+            SqlDataReader reader = cmdSelect.ExecuteReader();
+
+            while (reader.Read())
+            {
+                Agent agent = new Agent
+                {
+                    Name = reader.GetString(0),
+                    Lastname = reader.GetString(1),
+                    Username = reader.GetString(2)
+                };
+
+                StringBuilder sb = new StringBuilder();
+                sb
+                    .AppendLine($"Name: {agent.Name}")
+                    .AppendLine($"Lastname: {agent.Lastname}")
+                    .AppendLine($"Username: {agent.Username}");
+
+                Console.WriteLine(sb);
+            }
+            reader.Close();
+        }
+
+        public static void ExistentSenderInMessages(string SenderUsername, string Username)
+        {
+            SqlCommand cmdSelect = new SqlCommand($"SELECT COUNT(*) FROM agents WHERE Username = @Username", sqlConnection);
+            cmdSelect.Parameters.AddWithValue("@Username", $"{Username}");
+            int result = (int)cmdSelect.ExecuteScalar(); //SQL command object to retrieve single value
+
+            if (result > 0)
+            {
+                Console.WriteLine("Existent Username.");
+            }
+            else
+            {
+                Console.WriteLine("Non existent Username.");
+                MessageID.CreateMessage(SenderUsername);
+            }
+        }
+
+        public static void ExistentRecipientInMessages(string SenderUsername, string Username, DateTime TimeStamp)
+        {
+            SqlCommand cmdSelect = new SqlCommand($"SELECT COUNT(*) FROM messages WHERE Receiver = @Username AND TimeStamp = @TimeStamp", sqlConnection);
+            cmdSelect.Parameters.AddWithValue("@Username", $"{Username}");
+            cmdSelect.Parameters.AddWithValue("@TimeStamp", $"{TimeStamp}");
+            int result = (int)cmdSelect.ExecuteScalar();
+
+            if (result > 0)
+            {
+                Console.WriteLine("Existent Log.");
+            }
+            else
+            {
+                Console.WriteLine("Non existent Log.");
+                MessageID.EditMessage(SenderUsername);
+            }
+        }
+
+        public static Agent LoginToSQL (string Username, string password)
+        {
+            SqlCommand cmdLogin = new SqlCommand($"SELECT COUNT(*) FROM agents WHERE Username = @Username AND Password = @password", sqlConnection);
+            cmdLogin.Parameters.AddWithValue("@Username", $"{Username}");
+            cmdLogin.Parameters.AddWithValue("@password", $"{password}");
+            int result = (int)cmdLogin.ExecuteScalar();
+            Agent agent = new Agent();
+            if (result > 0)
+            {
+                Console.WriteLine("Success");
+                agent = PopulateUserInfo(Username);
+            }
+            else
+            {
+                Console.WriteLine("Attempt Failed");
+            }
+            return agent;
+        }
+
+        public static Agent PopulateUserInfo(string Username)
+        {
+            SqlCommand cmdSelect = new SqlCommand($"SELECT AgentID, Name, Lastname, Group, Telephone, Email, Role, Username FROM agents WHERE Username = @Username", sqlConnection);
+            cmdSelect.Parameters.AddWithValue("@Agentname", $"{Username}");
+
+            SqlDataReader reader = cmdSelect.ExecuteReader();
+
+            Agent agent = new Agent();
+
+            while (reader.Read())
+            {
+                agent.AgentID = reader.GetInt32(0);
+                agent.Name = reader.GetString(1);
+                agent.Lastname = reader.GetString(2);
+                agent.Group = reader.GetString(3);
+                agent.Telephone = reader.GetString(4);
+                agent.Email = reader.GetString(5);
+                agent.Role = reader.GetString(6);
+                agent.Username = reader.GetString(7);
+
+                Console.WriteLine(agent);
+            }
+            reader.Close();
+            return agent;
+        }
+
+        public static void ViewMessage(string Username)
+        {
+            SqlCommand cmdView = new SqlCommand($"SELECT TimeStamp, Sender, Receiver, MessageContents FROM messages WHERE Sender = '{Username}'", sqlConnection);
+            SqlDataReader reader = cmdView.ExecuteReader();
+            while (reader.Read())
+            {
+                Message message = new Message();
+                message.TimeStamp = reader.GetDateTime(0);
+                message.SenderUsername = reader.GetString(1);
+                message.ReceiverUsername = reader.GetString(2);
+                message.MessageContents = reader.GetString(3);
+
+                Console.WriteLine(message);
+            }
+            reader.Close();
+        }
+
+        public static void ViewAllMessages()
+        {
+            SqlCommand cmdView = new SqlCommand($"SELECT TimeStamp, Sender, Receiver, MessageContents FROM messages", sqlConnection);
+            SqlDataReader reader = cmdView.ExecuteReader();
+            while (reader.Read())
+            {
+                Message message = new Message();
+                message.TimeStamp = reader.GetDateTime(0);
+                message.SenderUsername = reader.GetString(1);
+                message.ReceiverUsername = reader.GetString(2);
+                message.MessageContents = reader.GetString(3);
+
+                Console.WriteLine(message);
+            }
+            reader.Close();
+        }
+
+        public static void ViewAllAgents()
+        {
+            SqlCommand cmdSelect = new SqlCommand($"SELECT AgentID, Name, Lastname, Group, Telephone, Email, Role, Username FROM agents", sqlConnection);
+            SqlDataReader reader = cmdSelect.ExecuteReader();
+            while (reader.Read())
+            {
+                Agent agent = new Agent();
+
+                agent.AgentID = reader.GetInt32(0);
+                agent.Name = reader.GetString(1);
+                agent.Lastname = reader.GetString(2);
+                agent.Group = reader.GetString(3);
+                agent.Telephone = reader.GetString(4);
+                agent.Email = reader.GetString(5);
+                agent.Role = reader.GetString(6);
+                agent.Username = reader.GetString(7);
+
+                Console.WriteLine(agent);
+            }
+            reader.Close();
+        }
+    }
+}
+
